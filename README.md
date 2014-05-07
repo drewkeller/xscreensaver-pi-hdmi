@@ -21,6 +21,11 @@ Based on scripts in a forum post, but packaged for debian / raspbian.
   http://www.raspberrypi.org/phpBB3/viewtopic.php?t=56944&p=429723  
   by simonmcc » Mon Sep 30, 2013 7:49 am  
 
+To build and install:
+`git clone http://github.com/drewkeller/xscreensaver-pi-hdmi`
+`pushd ./xscreensaver-pi-hdmi && dpkg-buildpackage && popd`
+`sudo dpkg -i ./xscreensaver-pi-hdmi_*.deb`
+
 For the impatient:
 
 `# direct control of HDMI / framebuffer needs special permissions`  
@@ -33,6 +38,11 @@ In your ~/.xsession file:
 
 `# start xscreensaver status monitor`  
 `xscreensaver-pi-hdmi &`  
+
+Alternatively, place the following two lines in the /etc/xdg/lxsession/<profile>/autostart file. You may need to create this file if it doesn't exist. On Raspbian, the only profile is 'LXDE'.
+
+`@xscreensaver -no-splash`
+`@xscreensaver-pi-hdmi 0`
 
 AUTHOR
 ------

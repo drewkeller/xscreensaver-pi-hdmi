@@ -10,6 +10,10 @@ usage() {
 	echo "  -h, --help   This help text"
 }
 
+export XAUTHORITY=/home/pi/.Xauthority
+export DISPLAY=":0"
+export XAUTHLOCALHOSTNAME=localhost
+
 if [[ "-h" == "$1" || "--help" == "$1" ]] ; then
 	usage
 	exit
@@ -43,7 +47,7 @@ hdmi_off() {
 
 hdmi_on() {
     # get the current state of HDMI output
-    tvservice --status | grep -q HDMI
+    tvservice --status | grep -qE 'DMT|CEA|HDMI'
     RESULT=$?
 
     # if HDMI was not found, RESULT=1 ... turn it back on
@@ -53,6 +57,15 @@ hdmi_on() {
        fbset -depth 8
        fbset -depth 16
        xrefresh
+       #because xrefresh doesn't always work
+       curr_vt=`sudo fgconsole`
+       if [ "$curr_vt" = "1" ]; then
+         sudo chvt2; sleep 1; sudo chvt1
+       else if [[ $curr_vt =~ $-?[0-9]+$ ]]; then
+         sudo chvt 2; sleep 1; sudo chvt "$curr_vt"
+       else
+         sudo chvt 1; sleep 1; sudo chvt 7
+       fi; fi
     fi
 }
 
@@ -77,8 +90,8 @@ while read line ; do
     if [[ $line =~ ^BLANK || $line =~ ^LOCK ]] ; then
         (
             sleep $DURATION_S
-            hdmi_off
-            echo 0 > $TEMPFILE
+                hdmi_off
+                echo 0 > $TEMPFILE
         ) &
         echo $! > $TEMPFILE
     fi
