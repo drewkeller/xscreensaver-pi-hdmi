@@ -26,18 +26,16 @@ fi
 TEMPFILE=`tempfile --prefix=hdmi. --suffix=.pid`
 echo 0 > $TEMPFILE
 
-
 interrupt_potential_sleeping_processes() {
     SLEEP_PID=0
-    if [ -x $TEMPFILE ] ; then
+    if [ -a $TEMPFILE ] ; then
         SLEEP_PID=`cat $TEMPFILE`
     fi
     if [ "0" != "$SLEEP_PID" ] ; then
         echo 0 > $TEMPFILE
-        kill $SLEEP_PID
+        kill -SIGHUP $SLEEP_PID
     fi
 }
-
 
 hdmi_off() {
     # no --quiet switch
@@ -77,11 +75,8 @@ hdmi_on_exit() {
     exit
 }
 
-#set -o monitor notify
-#set -bm
-#set +m
-
-trap 'hdmi_on_exit' SIGQUIT SIGINT
+trap 'hdmi_on_exit' SIGQUIT SIGINT SIGTERM
+trap '' SIGHUP # ignore this signal
 
 hdmi_on
 
@@ -89,13 +84,20 @@ hdmi_on
 while read line ; do
     if [[ $line =~ ^BLANK || $line =~ ^LOCK ]] ; then
         (
-            sleep $DURATION_S
-                hdmi_off
-                echo 0 > $TEMPFILE
+            # Start a subprocess timer to turn off the display if the timer expires.
+            # The subprocess watches for SIGHUP signal to terminal early.
+            # So a killall -SIGHUP xscreensaver-pi-hdmi will kill any subrocesses
+            # but not the parent process.
+            # $BASHPID seems to be more accurate than $! or $$.
+            trap 'exit' SIGHUP
+            echo $BASHPID > $TEMPFILE    # write this subprocess id so we can kill it
+            sleep $DURATION_S            #    in case UNBLANK occurs before we turn off
+            hdmi_off
+            echo 0 > $TEMPFILE           # subprocess is done
         ) &
-        echo $! > $TEMPFILE
     fi
     if [[ $line =~ ^UNBLANK ]] ; then
+        # prevent a "blanking" process from turning off the display if an "unblank"
         interrupt_potential_sleeping_processes
         hdmi_on
     fi
