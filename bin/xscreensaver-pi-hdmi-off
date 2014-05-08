@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# This script contains the commands to run when turning the display OFF.
+
+# no --quiet switch
+tvservice --off > /dev/null
+

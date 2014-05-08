@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# This script contains the commands to run when turning the display ON.
+
+# no --quiet switch
+tvservice --preferred > /dev/null
+
+# refresh the screen using xrefresh method
+fbset -depth 8
+fbset -depth 16
+xrefresh
+
+#because xrefresh doesn't always work
+curr_vt=`sudo fgconsole`
+if [ "$curr_vt" = "1" ]; then
+ sudo chvt2; sleep 1; sudo chvt1
+else if [[ $curr_vt =~ $-?[0-9]+$ ]]; then
+ sudo chvt 2; sleep 1; sudo chvt "$curr_vt"
+else
+ sudo chvt 1; sleep 1; sudo chvt 7
+fi; fi
