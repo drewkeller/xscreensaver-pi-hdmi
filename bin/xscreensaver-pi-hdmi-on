@@ -19,3 +19,6 @@ else if [[ $curr_vt =~ $-?[0-9]+$ ]]; then
 else
  sudo chvt 1; sleep 1; sudo chvt 7
 fi; fi
+
+# Using CEC command (requires libcec)
+echo "on 0" | cec-client -s -d 1

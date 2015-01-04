@@ -15,6 +15,7 @@ export DISPLAY=":0"
 export XAUTHLOCALHOSTNAME=localhost
 
 scriptPath=$(dirname $(readlink -f $0))
+cec=/home/pi/cec/cecsimple.sh
 
 if [[ "-h" == "$1" || "--help" == "$1" ]] ; then
 	usage
@@ -40,18 +41,42 @@ interrupt_potential_sleeping_processes() {
 }
 
 hdmi_off() {
-    "$scriptPath/xscreensaver-pi-hdmi-off"
+    # no --quiet switch
+    tvservice --off > /dev/null
+
+    # Using CEC command (requires libcec)
+    $cec tvoff
 }
 
 
 hdmi_on() {
+    #echo "standby 0" | cec-client -s -d 1
     # get the current state of HDMI output
     tvservice --status | grep -qE 'DMT|CEA|HDMI'
     RESULT=$?
 
     # if HDMI was not found, RESULT=1 ... turn it back on
     if [ "$RESULT" -eq 1 ] ; then
-        "$scriptPath/xscreensaver-pi-hdmi-on"
+	# no --quiet switch
+	tvservice --preferred > /dev/null
+	
+	# refresh the screen using xrefresh method
+	fbset -depth 8
+	fbset -depth 16
+	xrefresh
+	
+	#because xrefresh doesn't always work
+	curr_vt=`sudo fgconsole`
+	if [ "$curr_vt" = "1" ]; then
+	 sudo chvt2; sleep 1; sudo chvt1
+	else if [[ $curr_vt =~ $-?[0-9]+$ ]]; then
+	 sudo chvt 2; sleep 1; sudo chvt "$curr_vt"
+	else
+	 sudo chvt 1; sleep 1; sudo chvt 7
+	fi; fi
+	
+	# Using CEC command (requires libcec)
+	$cec tvon
     fi
 }
 
@@ -62,9 +87,12 @@ hdmi_on_exit() {
     hdmi_on
     exit
 }
-
 trap 'hdmi_on_exit' SIGQUIT SIGINT SIGTERM
 trap '' SIGHUP # ignore this signal
+
+#set -o monitor notify
+#set -bm
+#set +m
 
 hdmi_on
 

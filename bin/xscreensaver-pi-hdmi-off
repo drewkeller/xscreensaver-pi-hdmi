@@ -1,7 +1,11 @@
 #!/bin/bash
 
 # This script contains the commands to run when turning the display OFF.
+echo "BLANK" > xscreensaver-pi-hdmi.log
 
 # no --quiet switch
 tvservice --off > /dev/null
+
+# Using CEC command (requires libcec)
+echo "standby 0" | cec-client -s -d 1
 
